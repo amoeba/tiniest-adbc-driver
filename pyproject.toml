@@ -1,0 +1,8 @@
+[project]
+name = "adbc-c"
+version = "0.1.0"
+description = "Tiniest ADBC driver"
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+dependencies = ["adbc_driver_manager", "pyarrow", "pytest"]

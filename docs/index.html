@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>tiny.c</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>tiny.c</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-1">&#x00a7;</a>
+              </div>
+              <h2 id="introduction">Introduction</h2>
+<p>What’s the tiniest thing you could build that could reasonably be called an
+<a href="https://arrow.apache.org/adbc">ADBC</a> driver?</p>
+<p>As of writing, the ADBC spec lists 52 functions a driver can define but
+doesn’t specifically say which a driver <em>should</em> define. Which functions a
+driver chooses to define is up to the author but there’s no prescribed set
+and there’s no order you have to implement them in.</p>
+<h2 id="what-makes-a-driver-valid">What makes a driver valid?</h2>
+<ul>
+<li>Does an ADBC driver have to implement every single function in the ADBC
+spec or can it implement a subset? If a subset, which subset?</li>
+<li>Does it <em>have</em> to talk to a real database or is it free to talk to all
+kinds of things? ADBC, after all, is abstract. You could write an ADBC
+driver that talks to your smart doorbell.</li>
+</ul>
+<p>I thought about this for a bit and decided on this: An ADBC driver is an ADBC
+driver if it can be loaded by the driver manager without errors. Part of why
+I did this was because I remember David Li mentioning that the driver manager
+can implement some functions on behalf of drivers and I thought I’d be
+getting pretty close if I followed up on that idea.</p>
+<p>I’m doing this to get a bit more contact time with ADBC for my own
+understanding and I’m sharing this in case it helps someone else answer their
+own questions about ADBC.</p>
+<p>This source file is written as a literate C program which means you can build
+this file as your driver and load it with a driver manager. In fact, here are
+the steps:</p>
+<ol>
+<li>Get the pre-requisites: C compiler (gcc, clang, MSVC), make, and uv to
+test</li>
+<li>Run <code>make build</code></li>
+<li>Run <code>uv run pytest</code></li>
+</ol>
+<p>If the tests pass, the driver was successfully loaded by the driver manager.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-2">&#x00a7;</a>
+              </div>
+              <p>If you have any questions or comments, please feel free to email me at
+<a href="mailto:brycemecum@gmail.com">brycemecum@gmail.com</a>.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-3">&#x00a7;</a>
+              </div>
+              <h2 id="a-tiny-driver">A Tiny Driver</h2>
+<p>Given our rules above, let’s walk through what it takes to build a very tiny
+ADBC driver. For simplicity, it’s not going to connect to any external or
+in-memory database but it will load successfully with the driver manager.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-4">&#x00a7;</a>
+              </div>
+              <p>TODO: Talk about me</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdlib.h&gt;</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-5">&#x00a7;</a>
+              </div>
+              <p>The first line of code we’re write is to include the ADBC header:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&quot;../vendor/adbc/adbc.h&quot;</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-6">&#x00a7;</a>
+              </div>
+              <p>I mentioned below a set of functions and here they are. This is the
+minimum set of ADBC functions a driver has to implement to be loadable.
+Here I forward declare them so we can see them all together at once and
+we’ll actually define their bodies later on. We use ADBC_EXPORT which is
+defined in the ADBC header to ensure proper linkage across platforms.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDriverInit</span><span class="hljs-params">(<span class="hljs-type">int</span> version, <span class="hljs-type">void</span> *raw_driver,
+                                          <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                           <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseSetOption</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                                 <span class="hljs-type">const</span> <span class="hljs-type">char</span> *key,
+                                                 <span class="hljs-type">const</span> <span class="hljs-type">char</span> *value,
+                                                 <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseInit</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                            <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                               <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                             <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionInit</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                              <span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                              <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionRelease</span><span class="hljs-params">(
+    <span class="hljs-keyword">struct</span> AdbcConnection *connection, <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode
+<span class="hljs-title function_">AdbcConnectionSetOption</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection, <span class="hljs-type">const</span> <span class="hljs-type">char</span> *key,
+                        <span class="hljs-type">const</span> <span class="hljs-type">char</span> *value, <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                            <span class="hljs-keyword">struct</span> AdbcStatement *statement,
+                                            <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement,
+                                                <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode
+<span class="hljs-title function_">AdbcStatementSetSqlQuery</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-type">const</span> <span class="hljs-type">char</span> *query,
+                         <span class="hljs-keyword">struct</span> AdbcError *error)</span>;
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementExecuteQuery</span><span class="hljs-params">(
+    <span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-keyword">struct</span> ArrowArrayStream *out,
+    <span class="hljs-type">int64_t</span> *rows_affected, <span class="hljs-keyword">struct</span> AdbcError *error)</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-7">&#x00a7;</a>
+              </div>
+              <h2 id="implementing-the-driver">Implementing The Driver</h2>
+<p>At this point, we’re ready to start filling in our ADBC function bodies. I’ll
+explain a bit about each as we go and also about what the relevant parts of
+the API contract are.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-8">&#x00a7;</a>
+              </div>
+              <p><code>AdbcDatabaseNew</code> typically allocates an <code>AdbcDatabase</code> after which the
+Database would be in a created but unitialized state. Our driver can just
+return <code>ADBC_STATUS_OK</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                           <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-9">&#x00a7;</a>
+              </div>
+              <p>We have to define <code>AdbcDatabaseSetOption</code> but we should return
+<code>ADBC_STATUS_NOT_IMPLEMENTED</code> to make it clear that calling this won’t do
+anything.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseSetOption</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                                 <span class="hljs-type">const</span> <span class="hljs-type">char</span> *key,
+                                                 <span class="hljs-type">const</span> <span class="hljs-type">char</span> *value,
+                                                 <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-10">&#x00a7;</a>
+              </div>
+              <p><code>AdbcDatabaseInit</code> typically does any final prep before initializing the
+database with the options we may have set. Since our driver doesn’t support
+options, we can just return <code>ADBC_STATUS_OK</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseInit</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                            <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-11">&#x00a7;</a>
+              </div>
+              <p><code>AdbcDatabaseRelease</code> would typically ensure any open connections are cleaned
+up before freeing its own resources but our driver can just mark this as
+<code>ADBC_STATUS_NOT_IMPLEMENTED</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcDatabaseRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                               <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-12">&#x00a7;</a>
+              </div>
+              <p>The driver manager treats any driver that doesn’t set <code>private_data</code> to a
+non-null pointer as unitialized (unusable) so we just do a tiny allocation
+here to make it happy.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                             <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  connection-&gt;private_data = <span class="hljs-built_in">malloc</span>(<span class="hljs-number">1</span>);
+  <span class="hljs-keyword">if</span> (!connection-&gt;private_data) {
+    <span class="hljs-keyword">return</span> ADBC_STATUS_INVALID_STATE;
+  }
+
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-13">&#x00a7;</a>
+              </div>
+              <p>Similar to <code>AdbcDatabaseInit</code>, we can just return <code>ADBC_STATUS_OK</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionInit</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                              <span class="hljs-keyword">struct</span> AdbcDatabase *database,
+                                              <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-14">&#x00a7;</a>
+              </div>
+              <p>As part of the API contract, <code>AdbcConnectionRelease</code> needs to release the
+<code>private_data</code> member as part of the API contract.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcConnectionRelease</span><span class="hljs-params">(
+    <span class="hljs-keyword">struct</span> AdbcConnection *connection, <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">if</span> (connection-&gt;private_data) {
+    <span class="hljs-built_in">free</span>(connection-&gt;private_data);
+    connection-&gt;private_data = <span class="hljs-literal">NULL</span>;
+  }
+
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-15">&#x00a7;</a>
+              </div>
+              <p>We can leave this as <code>ADBC_STATUS_NOT_IMPLEMENTED</code> just like we did
+<code>AdbcDatabaseSetOption</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode
+<span class="hljs-title function_">AdbcConnectionSetOption</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection, <span class="hljs-type">const</span> <span class="hljs-type">char</span> *key,
+                        <span class="hljs-type">const</span> <span class="hljs-type">char</span> *value, <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-16">&#x00a7;</a>
+              </div>
+              <p>The next three functions can just return <code>ADBC_STATUS_OK</code>. Typically, these
+would allocate, modify, and release <code>private_data</code> related to our statement.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementNew</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcConnection *connection,
+                                            <span class="hljs-keyword">struct</span> AdbcStatement *statement,
+                                            <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}
+
+ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement,
+                                                <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-17">&#x00a7;</a>
+              </div>
+              <p>Normally this would take a query but our driver already knows the answer to
+any query we could conceivably send to it so we can just return
+<code>ADBC_STATUS_OK</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode
+<span class="hljs-title function_">AdbcStatementSetSqlQuery</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-type">const</span> <span class="hljs-type">char</span> *query,
+                         <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-18">&#x00a7;</a>
+              </div>
+              <p>Finally, a function that does something! Here we just create our simple
+<code>ArrowArrayStream</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementExecuteQuery</span><span class="hljs-params">(
+    <span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-keyword">struct</span> ArrowArrayStream *out,
+    <span class="hljs-type">int64_t</span> *rows_affected, <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-19">&#x00a7;</a>
+              </div>
+              <p>This isn’t part of the ADBC API but the driver manager will want us to define
+this.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>AdbcStatusCode <span class="hljs-title function_">AdbcDriverRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcDriver *driver,
+                                 <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-20">&#x00a7;</a>
+              </div>
+              <p>This is a special function the driver manager will call after it loads our
+driver which helps the driver manager find all of the functions we just
+defined.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>ADBC_EXPORT
+AdbcStatusCode <span class="hljs-title function_">AdbcDriverInit</span><span class="hljs-params">(<span class="hljs-type">int</span> version, <span class="hljs-type">void</span> *raw_driver,
+                              <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
+  <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">AdbcDriver</span> *<span class="hljs-title">driver</span> =</span> (<span class="hljs-keyword">struct</span> AdbcDriver *)raw_driver;
+
+  driver-&gt;release = AdbcDriverRelease;
+
+  driver-&gt;DatabaseNew = AdbcDatabaseNew;
+  driver-&gt;DatabaseInit = AdbcDatabaseInit;
+  driver-&gt;DatabaseRelease = AdbcDatabaseRelease;
+  driver-&gt;DatabaseSetOption = AdbcDatabaseSetOption;
+
+  driver-&gt;ConnectionNew = AdbcConnectionNew;
+  driver-&gt;ConnectionInit = AdbcConnectionInit;
+  driver-&gt;ConnectionRelease = AdbcConnectionRelease;
+  driver-&gt;ConnectionSetOption = AdbcConnectionSetOption;
+
+  driver-&gt;StatementNew = AdbcStatementNew;
+  driver-&gt;StatementRelease = AdbcStatementRelease;
+  driver-&gt;StatementSetSqlQuery = AdbcStatementSetSqlQuery;
+  driver-&gt;StatementExecuteQuery = AdbcStatementExecuteQuery;
+
+  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-21">&#x00a7;</a>
+              </div>
+              <p>And we’re done. We’ve defined just enough of an ADBC driver for it to
+cross-platform, loadable by a driver manager.</p>
+<p>To build the driver for your platform, run:</p>
+<pre><code class="language-sh">$ make build
+</code></pre>
+<p>and then to test the driver, you can open up a Python REPL with
+<code>adbc_driver_manager</code> with,</p>
+<pre><code class="language-sh">uv run --with <span class="hljs-string">&quot;adbc_driver_manager&quot;</span> python
+</code></pre>
+<p>and then in your REPL, execute:</p>
+<pre><code class="language-python"><span class="hljs-keyword">from</span> adbc_driver_manager <span class="hljs-keyword">import</span> dbapi
+
+<span class="hljs-keyword">with</span> dbapi.connect(driver=<span class="hljs-string">&quot;libtiny.so&quot;</span>) <span class="hljs-keyword">as</span> conn:
+    <span class="hljs-keyword">with</span> conn.cursor() <span class="hljs-keyword">as</span> cursor:
+        <span class="hljs-keyword">pass</span>
+</code></pre>
+<p>Or just run the automated tests with <code>uv run pytest</code>.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="sswrap ">
+                <a class="ss" href="#section-22">&#x00a7;</a>
+              </div>
+              <h2 id="summary">Summary</h2>
+<p>TODO</p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
