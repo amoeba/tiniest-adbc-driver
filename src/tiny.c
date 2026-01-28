@@ -1,44 +1,38 @@
-// ## Introduction
+// What's the tiniest [ADBC](https://arrow.apache.org/adbc) driver you could
+// build?
 //
-// What's the tiniest thing you could build that could reasonably be called an
-// [ADBC](https://arrow.apache.org/adbc) driver?
+// As of writing, the ADBC spec lists 52 functions a driver can define but it
+// doesn't specifically say which you have to define or in what order you should
+// tackle them as you build a driver.
 //
-// As of writing, the ADBC spec lists 52 functions a driver can define but
-// doesn't specifically say which a driver _should_ define. Which functions a
-// driver chooses to define is up to the author but there's no prescribed set
-// and there's no order you have to implement them in.
+// While working with [validation](https://github.com/adbc-drivers/validation)
+// framework for the [ADBC Driver Foundry](https://adbc-drivers.org), I got to
+// wondering about this question.
 //
-// ## What makes a driver valid?
+// ADBC drivers can be implemented a few ways, and one of the most common is to
+// build them as a shared library that exports symbols from the ADBC C API. This
+// shared library is then be loaded by an ADBC Driver Manager and the program
+// calls into the driver through the Driver Manager.
 //
+// I remembered seeing a comment somewhere that a Driver Manager, when loading a
+// driver, can actually fill in some methods for a driver that doesn't
+// implement. This gave me an idea for how to approach my original question.
 //
+// ## The Plan
 //
-// - Does an ADBC driver have to implement every single function in the ADBC
-//   spec or can it implement a subset? If a subset, which subset?
-// - Does it _have_ to talk to a real database or is it free to talk to all
-//   kinds of things? ADBC, after all, is abstract. You could write an ADBC
-//   driver that talks to your smart doorbell.
+// To figure this out, I'm going to build a driver in C that defines only as
+// many ADBC methods as needed to be loadable by a driver manager. I'll do it as
+// a literate program (this source file) and test it with the Python
+// [adbc-driver-manager](https://pypi.org/project/adbc-driver-manager/) which
+// wraps the C++ driver manager.
 //
-// I thought about this for a bit and decided on this: An ADBC driver is an ADBC
-// driver if it can be loaded by the driver manager without errors. Part of why
-// I did this was because I remember David Li mentioning that the driver manager
-// can implement some functions on behalf of drivers and I thought I'd be
-// getting pretty close if I followed up on that idea.
+// To build and test the driver, run,
 //
-// I'm doing this to get a bit more contact time with ADBC for my own
-// understanding and I'm sharing this in case it helps someone else answer their
-// own questions about ADBC.
+// ```sh
+// $ make
+// $ uv run pytest
+// ```
 //
-// This source file is written as a literate C program which means you can build
-// this file as your driver and load it with a driver manager. In fact, here are
-// the steps:
-//
-// 1. Get the pre-requisites: C compiler (gcc, clang, MSVC), make, and uv to
-// test
-// 2. Run `make build`
-// 4. Run `uv run pytest`
-//
-// If the tests pass, the driver was successfully loaded by the driver manager.
-
 // If you have any questions or comments, please feel free to email me at
 // [brycemecum@gmail.com](mailto:brycemecum@gmail.com).
 
