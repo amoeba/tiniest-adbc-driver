@@ -2,4 +2,4 @@ build
 .cache
 uv.lock
 **/__pycache__
-subprojects/*
+libtiny*
