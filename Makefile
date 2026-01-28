@@ -20,6 +20,7 @@ else
 			LDFLAGS := -dynamiclib
 			TARGET 	:= -o libtiny.dylib
     endif
+	CFLAGS 	:= -Wall -Wextra -O2 -fPIC -Wno-unused-parameter
 endif
 
 
