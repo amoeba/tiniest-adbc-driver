@@ -1,4 +1,3 @@
-
 UNAME_S := $(shell uname -s)
 
 ifeq ($(OS),Windows_NT)
@@ -8,19 +7,18 @@ ifeq ($(OS),Windows_NT)
 	TARGET 	:= /Fe:tiny.dll
 	RM 			:= del /Q
 else
-		CC 			:= cc
-		CFLAGS 	:= -Wall -Wextra -O2 -fPIC -Wno-unused
-		SRCS 		:= src/tiny.c
-		RM 			:= rm
-
-    ifeq ($(UNAME_S),Linux)
-			LDFLAGS := -shared
-			TARGET 	:= -o libtiny.so
-    else ifeq ($(UNAME_S),Darwin)
-			LDFLAGS := -dynamiclib
-			TARGET 	:= -o libtiny.dylib
-    endif
+	CC 			:= cc
 	CFLAGS 	:= -Wall -Wextra -O2 -fPIC -Wno-unused-parameter
+	SRCS 		:= src/tiny.c
+	RM 			:= rm
+
+	ifeq ($(UNAME_S),Linux)
+		LDFLAGS := -shared
+		TARGET 	:= -o libtiny.so
+	else ifeq ($(UNAME_S),Darwin)
+		LDFLAGS := -dynamiclib
+		TARGET 	:= -o libtiny.dylib
+	endif
 endif
 
 
