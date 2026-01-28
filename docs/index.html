@@ -382,7 +382,7 @@ would allocate, modify, and release <code>private_data</code> related to our sta
 
 ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementRelease</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement,
                                                 <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
-  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
 }</pre></div></div>
             
         </li>
@@ -403,7 +403,7 @@ any query we could conceivably send to it so we can just return
             <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode
 <span class="hljs-title function_">AdbcStatementSetSqlQuery</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-type">const</span> <span class="hljs-type">char</span> *query,
                          <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
-  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
 }</pre></div></div>
             
         </li>
@@ -423,7 +423,7 @@ any query we could conceivably send to it so we can just return
             <div class="content"><div class='highlight'><pre>ADBC_EXPORT AdbcStatusCode <span class="hljs-title function_">AdbcStatementExecuteQuery</span><span class="hljs-params">(
     <span class="hljs-keyword">struct</span> AdbcStatement *statement, <span class="hljs-keyword">struct</span> ArrowArrayStream *out,
     <span class="hljs-type">int64_t</span> *rows_affected, <span class="hljs-keyword">struct</span> AdbcError *error)</span> {
-  <span class="hljs-keyword">return</span> ADBC_STATUS_OK;
+  <span class="hljs-keyword">return</span> ADBC_STATUS_NOT_IMPLEMENTED;
 }</pre></div></div>
             
         </li>

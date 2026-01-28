@@ -183,7 +183,7 @@ ADBC_EXPORT AdbcStatusCode AdbcStatementNew(struct AdbcConnection *connection,
 
 ADBC_EXPORT AdbcStatusCode AdbcStatementRelease(struct AdbcStatement *statement,
                                                 struct AdbcError *error) {
-  return ADBC_STATUS_OK;
+  return ADBC_STATUS_NOT_IMPLEMENTED;
 }
 
 // Normally this would take a query but our driver already knows the answer to
@@ -192,7 +192,7 @@ ADBC_EXPORT AdbcStatusCode AdbcStatementRelease(struct AdbcStatement *statement,
 ADBC_EXPORT AdbcStatusCode
 AdbcStatementSetSqlQuery(struct AdbcStatement *statement, const char *query,
                          struct AdbcError *error) {
-  return ADBC_STATUS_OK;
+  return ADBC_STATUS_NOT_IMPLEMENTED;
 }
 
 // Finally, a function that does something! Here we just create our simple
@@ -200,7 +200,7 @@ AdbcStatementSetSqlQuery(struct AdbcStatement *statement, const char *query,
 ADBC_EXPORT AdbcStatusCode AdbcStatementExecuteQuery(
     struct AdbcStatement *statement, struct ArrowArrayStream *out,
     int64_t *rows_affected, struct AdbcError *error) {
-  return ADBC_STATUS_OK;
+  return ADBC_STATUS_NOT_IMPLEMENTED;
 }
 
 // This isn't part of the ADBC API but the driver manager will want us to define
