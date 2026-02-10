@@ -205,6 +205,7 @@ ADBC_EXPORT AdbcStatusCode AdbcStatementExecuteQuery(
 
 // This isn't part of the ADBC API but the driver manager will need this to be
 // defined.
+ADBC_EXPORT
 AdbcStatusCode AdbcDriverRelease(struct AdbcDriver *driver,
                                  struct AdbcError *error) {
   return ADBC_STATUS_NOT_IMPLEMENTED;
